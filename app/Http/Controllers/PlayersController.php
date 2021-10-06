@@ -68,156 +68,226 @@ class PlayersController extends Controller
     {
         //try {
 
-            $players = new Players();
+        $players = new Players();
 
-            $response = $players->randomDraw();
+        $response = $players->randomDraw();
 
-            $teams = [];
-            $j = 1;
-            $k = 0;
-            $f = 0;
+        $teams = [];
+        $j = 1;
+        $k = 0;
+        $f = 0;
 
-            $arrayControl = [];
-            $goalKeeper = [];
-            $goalKeeperLevel = [];
-            $goalKeeperHigherLevel = [];
-            $saveLevelGoal = [];
-            $g = 0;
-            if ($playerTeam < 3) {
-                return response()->json(['error' => true, 'situacao' => 'Escolher no minimo 3 jogadores por time'], 500);
+        $arrayControl = [];
+        $goalKeeper = [];
+        $goalKeeperLevel = [];
+        $goalKeeperHigherLevel = [];
+        $saveLevelGoal = [];
+        $g = 0;
+        if ($playerTeam < 3) {
+            return response()->json(['error' => true,'teams' => 0, 'situacao' => 'Escolher no minimo 3 jogadores por time'], 200);
+
+        }
+
+        if (($playerTeam * 2) <= count($response)) {
+
+            ########################################################################################
+            // separando os indices dos jogadores
+            for ($i = 0; $i < count($response); $i++) {
+                $arrayControl[$i] = $i;
+                // sera utilizado quando for realizar a disparidade de times
+                $response[$i]->change = false;
+                $response[$i]->goalMaster = false;
             }
 
-            if (($playerTeam * 2) <= count($response)) {
+            ########################################################################################
 
-                ########################################################################################
-                // separando os indices dos jogadores
-                for ($i = 0; $i < count($response); $i++) {
-                    $arrayControl[$i] = $i;
-                    // sera utilizado quando for realizar a disparidade de times
-                    $response[$i]->change = false;
+            //verifica quantos goleiros existe
+            $goalTotal = 0;
+            for ($i = 0; $i < count($response); $i++) {
+                if ($response[$i]->goalkeeper == 1) {
+                    $goalTotal += 1;
                 }
+            }
 
-                ########################################################################################
+            $foundGoal = false;
+            if ($goalTotal < 2) {
 
-                //verifica quantos goleiros existe
-                $goalTotal = 0;
-                for ($i = 0; $i < count($response); $i++) {
-                    if ($response[$i]->goalkeeper == 1) {
-                        $goalTotal += 1;
+                //caso exista apenas um goleiro, sera escolhido um jogador aleaorios para se tornar goleiro
+                while (!$foundGoal) {
+                    $rand_keys = rand(1, count($response));
+
+                    if ($response[$rand_keys]->goalkeeper != 1) {
+                        $response[$rand_keys]->goalkeeper = 1;
+                        $foundGoal = true;
                     }
                 }
 
-                $foundGoal = false;
-                if ($goalTotal < 2) {
+            }
 
-                    //caso exista apenas um goleiro, sera escolhido um jogador aleaorios para se tornar goleiro
-                    while (!$foundGoal) {
-                        $rand_keys = rand(1, count($response));
+            // separar os goleiros antes de separar os times
+            for ($i = 0; $i < count($response); $i++) {
+                if ($response[$i]->goalkeeper == 1) {
+                    $goalKeeper[$g] = $response[$i];
+                    $goalKeeper[$g]->position = $i;
 
-                        if ($response[$rand_keys]->goalkeeper != 1) {
-                            $response[$rand_keys]->goalkeeper = 1;
-                            $foundGoal = true;
-                        }
-                    }
+                    // sera utilizado quando for realizar a disparidade de times (os goleiros nao serao trocados)
+                    $goalKeeper[$g]->change = true;
 
+                    // esse array servira de base para pegar os goleiros de maior nivel
+                    $goalKeeperLevel[$g] = $response[$i]->level;
+                    $g += 1;
                 }
+            }
 
-                // separar os goleiros antes de separar os times
-                for ($i = 0; $i < count($response); $i++) {
-                    if ($response[$i]->goalkeeper == 1) {
-                        $goalKeeper[$g] = $response[$i];
-                        $goalKeeper[$g]->position = $i;
+            ########################################################################################
+            //pegar os 2 goleiros com maior level
+            $loop = 0;
+            $z = 0;
 
-                        // sera utilizado quando for realizar a disparidade de times (os goleiros nao serao trocados)
-                        $goalKeeper[$g]->change = true;
+            while ($loop < 2) {
 
-                        // esse array servira de base para pegar os goleiros de maior nivel
-                        $goalKeeperLevel[$g] = $response[$i]->level;
-                        $g += 1;
-                    }
-                }
+                $goalKeeperLevel = array_values($goalKeeperLevel);
 
-                ########################################################################################
-                //pegar os 2 goleiros com maior level
-                $loop = 0;
-                $z = 0;
+                $higherLevel = max($goalKeeperLevel);
 
-                while ($loop < 2) {
+                $found = false;
 
-                    $goalKeeperLevel = array_values($goalKeeperLevel);
+                while (!$found) {
+                    for ($q = 0; $q < count($goalKeeperLevel); $q++) {
+                        if ($goalKeeperLevel[$q] == $higherLevel) {
+                            //tirar o maior level da lista (assim na proxima vez pegar o segundo maior level da lista)
+                            unset($goalKeeperLevel[$q]);
 
-                    $higherLevel = max($goalKeeperLevel);
-
-                    $found = false;
-
-                    while (!$found) {
-                        for ($q = 0; $q < count($goalKeeperLevel); $q++) {
-                            if ($goalKeeperLevel[$q] == $higherLevel) {
-                                //tirar o maior level da lista (assim na proxima vez pegar o segundo maior level da lista)
-                                unset($goalKeeperLevel[$q]);
-
-                                for ($i = 0; $i < count($goalKeeper); $i++) {
-                                    // verificar qual goleiro tem esse level alto na lista de goleiros
-                                    if ($goalKeeper[$i]->level == $higherLevel) {
-                                        // salvar goleiros de maior nivel separados para ser adicionados posteriormente nos times
-                                        $goalKeeperHigherLevel[$z] = $goalKeeper[$i];
-                                        // salva apenas o nivel do goleiro (sera usado para escalar o goleiro para os times)
-                                        $saveLevelGoal[$z] = $higherLevel;
-                                        // tirar jogador da lista de sorteio
-                                        unset($arrayControl[$goalKeeper[$i]->position]);
-                                    }
+                            for ($i = 0; $i < count($goalKeeper); $i++) {
+                                // verificar qual goleiro tem esse level alto na lista de goleiros
+                                if ($goalKeeper[$i]->level == $higherLevel) {
+                                    // salvar goleiros de maior nivel separados para ser adicionados posteriormente nos times
+                                    $goalKeeperHigherLevel[$z] = $goalKeeper[$i];
+                                    // salva apenas o nivel do goleiro (sera usado para escalar o goleiro para os times)
+                                    $saveLevelGoal[$z] = $higherLevel;
+                                    // tirar jogador da lista de sorteio
+                                    unset($arrayControl[$goalKeeper[$i]->position]);
                                 }
-                                $found = true;
                             }
+                            $found = true;
+                        }
+                    }
+
+                    $z += 1;
+                }
+
+                $loop += 1;
+            }
+
+            ########################################################################################
+            $t = count($arrayControl);
+
+            // salva total de players por time para gerar os demais times sem destinção de goleiro
+            $teamPlayerAll = $playerTeam;
+            // tirar do total de jogadores por times os goleiros já escolhidos
+            $playerTeam -= 1;
+
+            // Sorteando os jogadores para cada time
+            for ($i = 0; $i < $t; $i++) {
+
+                if ($j > 2) {
+                    $playerTeam = $teamPlayerAll;
+                }
+
+                $rand_keys = array_rand($arrayControl, 1);
+                unset($arrayControl[$rand_keys]);
+
+                $teams['team' . $j][$k] = $response[$rand_keys];
+                $k += 1;
+                $f += 1;
+
+                if ($f == $playerTeam) {
+                    $j += 1;
+                    $k = 0;
+                    $f = 0;
+                }
+            }
+
+            ########################################################################################
+            // Aplicando balancemaneto de nivel nos dois times principais (nao sera levado em consideracao os jogadores sobressalentes)
+            // e escalando os goleiros para os dois times
+
+            // somando os levels dos times (ainda sem goleiros)
+            $teamsBalancing = $this->sumlevel($teams, $j);
+
+            // separar apenas os niveis dos jogadores de cada time antes de escalar os goleiros (eles nao serao trocados nos times)
+            $teamsLevels = $this->separateLevels($teams);
+
+            //adicionando goleiros de acordo com o nivel dos times (o time de menor level recebe o goleiro de maior level)
+
+            // ajuste de indices do array
+            $saveLevelGoal = array_values($saveLevelGoal);
+
+            $big = "";
+            $small = "";
+
+            if ($teamsBalancing['team1'] > $teamsBalancing['team2']) {
+                $big = "team1";
+                $small = "team2";
+            } else {
+                $big = "team2";
+                $small = "team1";
+            }
+
+            $higherLevel = max($saveLevelGoal);
+
+            $goalFound = false;
+            $goalFound2 = false;
+            $m = 0;
+            $m2 = 0;
+
+            while (!$goalFound) {
+                // verificar qual goleiro tem o level alto na lista de goleiros
+                if ($goalKeeperHigherLevel[$m]->level == $higherLevel) {
+                    // escalando goleiro de maior nivel no time de menor nivel
+                    $goalKeeperHigherLevel[$m]->goalMaster = true;
+                    $teams[$small][4] = $goalKeeperHigherLevel[$m];
+
+                    //tira nivel ja selecionado
+
+                    for ($z = 0; $z < count($saveLevelGoal); $z++) {
+                        if ($saveLevelGoal[$z] == $higherLevel) {
+                            unset($saveLevelGoal[$z]);
+                        }
+                    }
+
+                    // pega o segundo maior level
+                    $higherLevel = max($saveLevelGoal);
+
+                    while (!$goalFound2) {
+                        if ($goalKeeperHigherLevel[$m2]->level == $higherLevel & !$goalKeeperHigherLevel[$m2]->goalMaster) {
+                            $goalKeeperHigherLevel[$m2]->goalMaster = true;
+                            $teams[$big][4] = $goalKeeperHigherLevel[$m2];
+
+                            $goalFound2 = true;
                         }
 
-                        $z += 1;
+                        $m2 += 1;
                     }
 
-                    $loop += 1;
+                    $goalFound = true;
                 }
 
-                ########################################################################################
-                $t = count($arrayControl);
+                $m += 1;
 
-                // tirar do total de jogadores por times os goleiros já escolhidos
-                $playerTeam -= 1;
+            }
 
-                // Sorteando os jogadores para cada time
-                for ($i = 0; $i < $t; $i++) {
+            //verificando disparidade dos time (sera usado o teor de disparidade  = 3)
 
-                    $rand_keys = array_rand($arrayControl, 1);
-                    unset($arrayControl[$rand_keys]);
+            // somando os levels dos times (com goleiros)
+            $teamsBalancing = $this->sumlevel($teams, $j);
 
-                    $teams['team' . $j][$k] = $response[$rand_keys];
-                    $k += 1;
-                    $f += 1;
+            $disparity = $this->checkDisparity($teamsBalancing['team1'], $teamsBalancing['team2']);
 
-                    if ($f == $playerTeam) {
-                        $j += 1;
-                        $k = 0;
-                        $f = 0;
-                    }
-                }
+            while ($disparity) {
 
-                ########################################################################################
-                // Aplicando balancemaneto de nivel nos dois times principais (nao sera levado em consideracao os jogadores sobressalentes)
-                // e escalando os goleiros para os dois times
-
-                // somando os levels dos times (ainda sem goleiros)
-                $teamsBalancing = $this->sumlevel($teams, $j);
-
-                // separar apenas os niveis dos jogadores de cada time antes de escalar os goleiros (eles nao serao trocados nos times)
-                $teamsLevels = $this->separateLevels($teams);
-
-                //adicionando goleiros de acordo com o nivel dos times (o time de menor level recebe o goleiro de maior level)
-
-                // ajuste de indices do array
-                $saveLevelGoal = array_values($saveLevelGoal);
-
-                $big = "";
-                $small = "";
-
+                // Aqui começa a troca de jogadores entre os dois time, sempre o maior level sera trocado pelo de menor level mas, depois de uma troca
+                // o jogador nao sera mais trocado do time
                 if ($teamsBalancing['team1'] > $teamsBalancing['team2']) {
                     $big = "team1";
                     $small = "team2";
@@ -226,110 +296,67 @@ class PlayersController extends Controller
                     $small = "team1";
                 }
 
-                $higherLevel = max($saveLevelGoal);
+                // sempre tira o jogador de maior level do time que tem a maior soma de level
+                //depois realiza uma nova verificacao de disparidade
 
-                $goalFound = false;
-                $m = 0;
+                if (count($teamsLevels[$big]) == 0) {
+                    // quando atinge a quantidade maxima de jogadores e nao conseguir balancear deixa passar (pensar melhor em como ajustar)
+                    $disparity = false;
+                } else {
+                    $higherLevelBig = max($teamsLevels[$big]);
+                    $higherLevelSmall = min($teamsLevels[$small]);
 
-                while (!$goalFound) {
-                    // verificar qual goleiro tem o level alto na lista de goleiros
-                    if ($goalKeeperHigherLevel[$m]->level == $higherLevel) {
-                        // escalando goleiro de maior nivel no time de menor nivel
-                        $teams[$small][4] = $goalKeeperHigherLevel[$m];
+                    $tempPlayer = [];
+                    $loopB = false;
+                    $loopS = false;
 
-                        // essa verificao so é possivel pois sempre tera apenas dois goleiros seleconados
-                        if ($m > 0) {
-                            $teams[$big][4] = $goalKeeperHigherLevel[0];
-                        } else {
-                            $teams[$big][4] = $goalKeeperHigherLevel[1];
-                        }
+                    $teams[$big] = array_values($teams[$big]);
+                    //pegando jogador de maior nivel do time que possui a maior soma de niveis
+                    for ($i = 0; $i < count($teams[$big]); $i++) {
+                        if ($teams[$big][$i]->level == $higherLevelBig & !$teams[$big][$i]->change & !$loopB) {
+                            $teams[$big][$i]->change = true;
+                            $tempPlayer = $teams[$big][$i];
+                            $loopB = true;
+                            //eliminando level do array de levels
+                            $key = array_search($higherLevelBig, $teamsLevels[$big]);
+                            unset($teamsLevels[$big][$key]);
 
-                        $goalFound = true;
-                    }
+                            $teams[$small] = array_values($teams[$small]);
+                            //pegando jogador de maior nivel do time que possui a menor soma de niveis
+                            for ($a = 0; $a < count($teams[$small]); $a++) {
 
-                    $m += 1;
-                }
+                                if ($teams[$small][$a]->level == $higherLevelSmall & !$teams[$small][$a]->change & !$loopS) {
+                                    $teams[$small][$a]->change = true;
+                                    // realizando a troca de jogadores
+                                    $teams[$big][$i] = $teams[$small][$a];
+                                    $teams[$small][$a] = $tempPlayer;
+                                    $loopS = true;
 
-                //verificando disparidade dos time (sera usado o teor de disparidade  = 3)
-
-                // somando os levels dos times (com goleiros)
-                $teamsBalancing = $this->sumlevel($teams, $j);
-
-                $disparity = $this->checkDisparity($teamsBalancing['team1'], $teamsBalancing['team2']);
-
-                while ($disparity) {
-
-                    // Aqui começa a troca de jogadores entre os dois time, sempre o maior level sera trocado pelo de menor level mas, depois de uma troca
-                    // o jogador nao sera mais trocado do time
-                    if ($teamsBalancing['team1'] > $teamsBalancing['team2']) {
-                        $big = "team1";
-                        $small = "team2";
-                    } else {
-                        $big = "team2";
-                        $small = "team1";
-                    }
-
-                    // sempre tira o jogador de maior level do time que tem a maior soma de level
-                    //depois realiza uma nova verificacao de disparidade
-
-                    if (count($teamsLevels[$big]) == 0) {
-                        // quando atinge a quantidade maxima de jogadores e nao conseguir balancear deixa passar (pensar melhor em como ajustar)
-                        $disparity = false;
-                    } else {
-                        $higherLevelBig = max($teamsLevels[$big]);
-                        $higherLevelSmall = min($teamsLevels[$small]);
-
-                        $tempPlayer = [];
-                        $loopB = false;
-                        $loopS = false;
-
-                        $teams[$big] = array_values($teams[$big]);
-                        //pegando jogador de maior nivel do time que possui a maior soma de niveis
-                        for ($i = 0; $i < count($teams[$big]); $i++) {
-                            if ($teams[$big][$i]->level == $higherLevelBig & !$teams[$big][$i]->change & !$loopB) {
-                                $teams[$big][$i]->change = true;
-                                $tempPlayer = $teams[$big][$i];
-                                $loopB = true;
-                                //eliminando level do array de levels
-                                $key = array_search($higherLevelBig, $teamsLevels[$big]);
-                                unset($teamsLevels[$big][$key]);
-
-                                $teams[$small] =array_values($teams[$small]);
-                                //pegando jogador de maior nivel do time que possui a menor soma de niveis
-                                for ($a = 0; $a < count($teams[$small]); $a++) {
-
-                                    if ($teams[$small][$a]->level == $higherLevelSmall & !$teams[$small][$a]->change & !$loopS) {
-                                        $teams[$small][$a]->change = true;
-                                        // realizando a troca de jogadores
-                                        $teams[$big][$i] = $teams[$small][$a];
-                                        $teams[$small][$a] = $tempPlayer;
-                                        $loopS = true;
-
-                                        //eliminando level do array de levels
-                                        $key = array_search($higherLevelSmall, $teamsLevels[$small]);
-                                        unset($teamsLevels[$small][$key]);
-                                    }
+                                    //eliminando level do array de levels
+                                    $key = array_search($higherLevelSmall, $teamsLevels[$small]);
+                                    unset($teamsLevels[$small][$key]);
                                 }
                             }
                         }
-
-                        // soma de novo os niveis dos times
-                        $teamsBalancing = $this->sumlevel($teams, $j);
-
-                        // verifica se os times ainda estao com disparidade
-                        $disparity = $this->checkDisparity($teamsBalancing['team1'], $teamsBalancing['team2']);
-
                     }
+
+                    // soma de novo os niveis dos times
+                    $teamsBalancing = $this->sumlevel($teams, $j);
+
+                    // verifica se os times ainda estao com disparidade
+                    $disparity = $this->checkDisparity($teamsBalancing['team1'], $teamsBalancing['team2']);
+
                 }
-
-                $teams['team1'] = array_values($teams['team1']);
-                $teams['team2'] = array_values($teams['team2']);
-
-                return response()->json(['error' => false, 'situacao' => '', 'teams' => count($teams), 'dados' => $teams], 200);
-
-            } else {
-                return response()->json(['error' => false, 'situacao' => 'Nao é possivel forma dois times com a quantidade de jogadores informado', 'dados' => ''], 200);
             }
+
+            $teams['team1'] = array_values($teams['team1']);
+            $teams['team2'] = array_values($teams['team2']);
+
+            return response()->json(['error' => false, 'situacao' => '', 'teams' => count($teams), 'dados' => $teams], 200);
+
+        } else {
+            return response()->json(['error' => false,'teams' => 0, 'situacao' => 'Nao é possivel forma dois times com a quantidade de jogadores informado', 'dados' => ''], 200);
+        }
 
         // } catch (Exception $e) {
         //     return response()->json(['error' => true, 'situacao' => 'erro ao tentar montar os times'], 500);
@@ -340,7 +367,6 @@ class PlayersController extends Controller
     {
         $teamsBalancing = [];
         $loopTeam = 1;
-
 
         // somando os levels dos jogadores
         while ($loopTeam <= $teamFormat) {

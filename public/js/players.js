@@ -100,41 +100,51 @@ function RaffleTeams(Qtdplayer) {
         contentType: false,
         _token: $('#token').val()
     }).then(function (data) {
-        //console.log(data);
+
         var html = '';
 
-
-        keys = [];
-
-        Object.entries(data.dados).forEach(([key, value]) => {
-            keys[key] = value
-        });
-
-         t = 1;
-        console.log(keys);
-        while (t <= data.teams) {
-
-            var listHmlm = "";
-
-             for (let i = 0; i < keys[('team'+t)].length; i++) {
-                listHmlm += "<li class='list-group-item'>" + keys[('team'+t)][i].name + "</li>";
-            }
+        if (data.teams == 0) {
+            html = data.situacao
+        } else {
 
 
-            html += "<div class='col-6'>" +
-                "<ul class='list-group'>" +
-                "<li class='list-group-item active'>Time " + t + "</li>" +
-                 listHmlm +
-                "</ul>" +
-                "</div>";
+            keys = [];
+
+            Object.entries(data.dados).forEach(([key, value]) => {
+                keys[key] = value
+            });
+
+            t = 1;
+            console.log(keys);
+            while (t <= data.teams) {
+
+                var listHmlm = "";
+                var goleiro = "";
+
+                for (let i = 0; i < keys[('team' + t)].length; i++) {
+
+                    if (keys[('team' + t)][i].goalMaster) {
+                        goleiro = " (Goleiro)"
+                    }
+
+                    listHmlm += "<li class='list-group-item'>" + keys[('team' + t)][i].name + goleiro + "</li>";
+                }
+
+
+                html += "<div class='col-6'>" +
+                    "<ul class='list-group'>" +
+                    "<li class='list-group-item active'>Time " + t + "</li>" +
+                    listHmlm +
+                    "</ul>" +
+                    "</div>";
 
                 console.log(html);
 
 
-            t +=1;
+                t += 1;
+            }
+
         }
-
-
 
         $('#listTeam').html(html)
     });
@@ -170,9 +180,6 @@ function getPlayers() {
     });
 }
 
-
-
-
 function startTable(data) {
     console.log("here");
     DataTable = $("#tablePlayers").DataTable({
@@ -192,11 +199,11 @@ function startTable(data) {
             "width": "7%"
         },
         {
-            "data": "actionPresence",
+            "data": "goalkeeper",
             "width": "7%"
         },
         {
-            "data": "goalkeeper",
+            "data": "actionPresence",
             "width": "7%"
         },
         {

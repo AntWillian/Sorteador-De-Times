@@ -111,7 +111,7 @@
         </div>
 
         <div class="col-6">
-            <input type="text" class="form-control" name="txtQtdplayer" id="txtQtdplayer">
+            <input type="text" placeholder="Selecionar quantidade de participantes por time" class="form-control" name="txtQtdplayer" id="txtQtdplayer">
             <button id="btnRaffle" type="button" class="btn btn-secondary">Sortear</button>
             <div class="row" id="listTeam">
 
