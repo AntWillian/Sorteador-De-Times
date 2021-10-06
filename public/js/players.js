@@ -35,10 +35,10 @@ $(document).ready(function () {
         console.log(data);
 
         if (data.idPlayer == '') {
-            router = './newPlayer';
+            router = '../newPlayer';
             metodo = 'Post'
         } else {
-            router = './editPlayer';
+            router = '../editPlayer';
             metodo = 'Put'
         }
 
@@ -94,7 +94,7 @@ $(document).ready(function () {
 
 function RaffleTeams(Qtdplayer) {
 
-    $.get('./randomDraw/' + Qtdplayer, {
+    $.get('../randomDraw/' + Qtdplayer, {
         dataType: 'json',
         processData: false,
         contentType: false,
@@ -143,7 +143,7 @@ function RaffleTeams(Qtdplayer) {
 
 function getPlayers() {
 
-    $.get('./getPlayers', {
+    $.get('../getPlayers', {
     }).then(function (data) {
 
 
@@ -220,7 +220,7 @@ function startTable(data) {
 }
 
 function getPlayerId(idPlayer) {
-    $.get('./getPlayerId/' + idPlayer, {
+    $.get('../getPlayerId/' + idPlayer, {
         dataType: 'json',
         processData: false,
         contentType: false,
@@ -236,7 +236,7 @@ function getPlayerId(idPlayer) {
 
 function confirmPresence(idPlayer, presence) {
 
-    $.post('./confirmPresence/' + idPlayer + "/" + presence, {
+    $.post('../confirmPresence/' + idPlayer + "/" + presence, {
         dataType: 'json',
         processData: false,
         contentType: false,
