@@ -11,7 +11,7 @@ class Players extends Model
 {
     public function getPlayers()
     {
-        $players = DB::table('Players')->get();
+        $players = DB::table('players')->get();
 
         return $players;
     }
