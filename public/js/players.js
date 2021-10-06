@@ -57,7 +57,7 @@ $(document).ready(function () {
             success: function (data) {
 
 
-                if (router == './newPlayer') {
+                if (router == '../newPlayer') {
 
                     Swal.fire(
                         'Cadastrado',
@@ -66,7 +66,7 @@ $(document).ready(function () {
                     )
 
 
-                } else if (router == './editPlayer') {
+                } else if (router == '../editPlayer') {
                     Swal.fire(
                         'Editado',
                         'Editado com sucesso!',
